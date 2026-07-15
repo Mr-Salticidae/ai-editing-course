@@ -1,0 +1,20 @@
+# 大体积媒体文件不入库（口播原片、成片、长素材）
+*.mp4
+*.mov
+*.mkv
+*.avi
+*.wav
+*.flac
+*.aac
+*.m4a
+
+# 小体积物料（图片/字幕/BGM 片段）默认入库；如需入库某个视频样例，用 git add -f 强制添加
+
+# 系统与临时
+Thumbs.db
+Desktop.ini
+~$*
+*.tmp
+
+# Node（若后续引入 Remotion）
+node_modules/
