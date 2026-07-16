@@ -212,7 +212,7 @@ def generate_charts() -> list[dict]:
 def generate_progress_assets() -> list[dict]:
     output_dir = config.EDIT_DIR / "animations" / "progress"
     output_dir.mkdir(parents=True, exist_ok=True)
-    width, height = 1640, 56
+    width, height = 1640, 72
     rail_left, rail_right, rail_y = 20, width - 20, 10
     label_font = ImageFont.truetype(str(config.FONT_BOLD), 28)
     generated: list[dict] = []
@@ -557,9 +557,9 @@ def main() -> int:
     screen_freeze = generate_screen_freeze()
     config.OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     output = args.output or config.OUTPUT_DIR / (
-        "Codex保姆级教学_审核预览_v2.4.1.mp4"
+        "Codex保姆级教学_审核预览_v2.4.2.mp4"
         if args.draft
-        else "Codex保姆级教学_成片_v2.4.1.mp4"
+        else "Codex保姆级教学_成片_v2.4.2.mp4"
     )
     output = output.resolve()
     command, filter_graph = build_command(
