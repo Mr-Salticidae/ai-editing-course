@@ -3,7 +3,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "02_口播视频原稿" / "视频源文件.mp4"
-SCREEN_RECORDING = ROOT / "03_剪辑物料" / "录屏" / "Codex演示_界面与热点任务.mp4"
+SCREEN_DEMO_IMAGE = ROOT / "03_剪辑物料" / "录屏" / "Codex演示_热点结果截图.png"
 BGM = ROOT / "03_剪辑物料" / "BGM_Codex教学_v1_ToolThatLands.wav"
 SUBTITLES = ROOT / "04_剪辑方案" / "字幕工作区" / "字幕_校对v1.srt"
 ASSET_DIR = ROOT / "03_剪辑物料" / "剪辑素材"
@@ -22,7 +22,6 @@ SCREEN_INSERT = {
     "end": 154.4,
     "source_start": 0.0,
 }
-SCREEN_GLITCH_SKIP = {"start": 13.25, "end": 15.0}
 
 PROGRESS_ICON = ASSET_DIR / "genji像素小人.png"
 PROGRESS_SECTIONS = [
@@ -66,8 +65,8 @@ UI_CARDS = [
     {"id": "workflow", "title": "AGENT 工作流", "lines": ["打开项目  →  改代码", "查资料  →  部署上线"], "start": 110.4, "end": 114.0, "x": "W-w-70", "y": "70"},
     {"id": "agent_name", "title": "所以叫 AGENT", "lines": ["理解目标", "自主完成连续动作"], "start": 125.7, "end": 127.9, "x": "W-w-70", "y": "70"},
     {"id": "download", "title": "安装与界面", "lines": ["下载  ·  登录  ·  新建任务", "接下来进入实机演示"], "start": 128.3, "end": 131.0, "x": "70", "y": "70"},
-    {"id": "screen_regions", "title": "界面结构", "lines": ["任务入口  ·  对话输入", "扩展连接区"], "start": 143.4, "end": 149.6, "x": "W-w-70", "y": "60"},
-    {"id": "task_demo", "title": "任务演示", "lines": ["收集近期 AI 热点", "正在联网检索"], "start": 149.6, "end": 154.4, "x": "W-w-70", "y": "60"},
+    {"id": "screen_regions", "title": "界面结构", "lines": ["任务列表  ·  对话结果", "来源与输出区"], "start": 143.4, "end": 149.6, "x": "680", "y": "60"},
+    {"id": "task_demo", "title": "任务演示", "lines": ["收集近期 AI 热点", "结果已经生成"], "start": 149.6, "end": 154.4, "x": "680", "y": "60"},
     {"id": "appetizer", "title": "这只是开胃菜", "lines": ["先看清工具能力", "再进入真实业务"], "start": 154.6, "end": 162.6, "x": "70", "y": "70"},
     {"id": "authority", "title": "长期一线经验", "lines": ["深耕 AIGC 六年", "2025 百大讲师"], "start": 162.6, "end": 174.5, "x": "70", "y": "70"},
     {"id": "creator_case", "title": "内容创作", "lines": ["流程打包交付", "从重复劳动中释放"], "start": 175.1, "end": 179.0, "x": "W-w-70", "y": "70"},
@@ -87,9 +86,9 @@ CHARTS = [
 TEXT_CARDS = []
 
 SCREEN_HIGHLIGHTS = [
-    {"start": 143.4, "end": 144.9, "x": 55, "y": 45, "w": 100, "h": 100, "color": ACCENT},
-    {"start": 144.9, "end": 146.3, "x": 865, "y": 590, "w": 930, "h": 215, "color": ACCENT},
-    {"start": 146.3, "end": 147.8, "x": 900, "y": 805, "w": 860, "h": 55, "color": ACCENT},
+    {"start": 143.4, "end": 144.9, "x": 8, "y": 60, "w": 272, "h": 875, "color": ACCENT},
+    {"start": 144.9, "end": 146.3, "x": 745, "y": 155, "w": 720, "h": 765, "color": ACCENT},
+    {"start": 146.3, "end": 147.8, "x": 1620, "y": 85, "w": 285, "h": 210, "color": ACCENT},
 ]
 
 SUBTITLE_KEYWORDS = [
