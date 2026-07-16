@@ -8,88 +8,65 @@ BGM = ROOT / "03_剪辑物料" / "BGM_Codex教学_v1_ToolThatLands.wav"
 SUBTITLES = ROOT / "04_剪辑方案" / "字幕工作区" / "字幕_校对v1.srt"
 ASSET_DIR = ROOT / "03_剪辑物料" / "剪辑素材"
 OUTPUT_DIR = ROOT / "05_成片"
+EDIT_DIR = ROOT / "edit"
 
 FPS = 30
 DURATION = 229.778
 DESIGN_SIZE = (1920, 1080)
 FONT_REGULAR = Path("C:/Windows/Fonts/msyh.ttc")
 FONT_BOLD = Path("C:/Windows/Fonts/msyhbd.ttc")
+ACCENT = "#69FF75"
 
-# The recording starts at its first frame. Its local 18.6s typing action aligns
-# with the narration's 149.6s demonstration sentence.
 SCREEN_INSERT = {
     "start": 131.0,
     "end": 154.4,
     "source_start": 0.0,
 }
 
-# Static overlays. Positions are ffmpeg expressions in the 1920x1080 design
-# coordinate system so timing changes stay isolated in this file.
+# v2 keeps brand marks only. Explanatory content is rendered through the
+# consistent UI card system below instead of unrelated sticker illustrations.
 OVERLAYS = [
-    {"file": "OpenClaw图标.png", "start": 1.9, "end": 4.8, "width": 250, "x": "90", "y": "150"},
-    {"file": "claude.png", "start": 2.5, "end": 4.8, "width": 250, "x": "W-w-90", "y": "150"},
-    {"file": "Codex图标.png", "start": 4.8, "end": 8.1, "width": 360, "x": "W-w-110", "y": "120"},
-    {"file": "Codex图标.png", "start": 16.3, "end": 21.7, "width": 250, "x": "110", "y": "150"},
-    {"file": "gpt.png", "start": 16.3, "end": 21.7, "width": 250, "x": "W-w-110", "y": "150"},
-    {"file": "魔法1.png", "start": 26.5, "end": 29.2, "width": 360, "x": "100", "y": "120"},
-    {"file": "白圆箭头.png", "start": 26.5, "end": 29.2, "width": 250, "x": "W-w-180", "y": "620"},
-    {"file": "genji像素小人.png", "start": 30.0, "end": 41.9, "width": 330, "x": "90", "y": "520"},
-    {"file": "genji账号头像.png", "start": 30.0, "end": 41.9, "width": 220, "x": "W-w-90", "y": "100"},
-    {"file": "图标/OpenAI.png", "start": 43.5, "end": 46.8, "width": 300, "x": "100", "y": "140"},
-    {"file": "Codex图标.png", "start": 43.5, "end": 52.5, "width": 270, "x": "W-w-100", "y": "130"},
-    {"file": "图标_表格.png", "start": 48.0, "end": 50.2, "width": 230, "x": "100", "y": "570"},
-    {"file": "图标_剪刀胶片剪辑.png", "start": 50.2, "end": 52.5, "width": 260, "x": "W-w-100", "y": "560"},
-    {"file": "对话气泡.png", "start": 56.4, "end": 62.0, "width": 390, "x": "80", "y": "120"},
-    {"file": "对话气泡.png", "start": 62.0, "end": 67.0, "width": 390, "x": "W-w-80", "y": "130"},
-    {"file": "对话气泡.png", "start": 67.0, "end": 71.9, "width": 390, "x": "80", "y": "520"},
-    {"file": "像素老师.png", "start": 80.5, "end": 94.8, "width": 330, "x": "90", "y": "500"},
-    {"file": "豆包男老师.png", "start": 80.5, "end": 94.8, "width": 330, "x": "W-w-90", "y": "500"},
-    {"file": "像素老师.png", "start": 95.4, "end": 106.6, "width": 240, "x": "55", "y": "120"},
-    {"file": "豆包男老师.png", "start": 95.4, "end": 106.6, "width": 240, "x": "W-w-55", "y": "120"},
-    {"file": "👂.png", "start": 98.0, "end": 106.6, "width": 150, "x": "80", "y": "650"},
-    {"file": "✅.png", "start": 100.0, "end": 106.6, "width": 150, "x": "W-w-80", "y": "650"},
-    {"file": "图标_打开文件夹带文档.png", "start": 110.4, "end": 125.7, "width": 235, "x": "80", "y": "150"},
-    {"file": "cc  logo.png", "start": 114.0, "end": 125.7, "width": 235, "x": "340", "y": "150"},
-    {"file": "图标_文件夹放大镜检索.png", "start": 117.2, "end": 125.7, "width": 235, "x": "W-w-340", "y": "150"},
-    {"file": "图标_齿轮文档看板.png", "start": 120.5, "end": 125.7, "width": 235, "x": "W-w-80", "y": "150"},
-    {"file": "2025年百大up主皇冠全.png", "start": 162.6, "end": 174.5, "width": 430, "x": "80", "y": "120"},
-    {"file": "💰️.png", "start": 175.1, "end": 188.0, "width": 310, "x": "90", "y": "180", "kind": "animated_image"},
-    {"file": "💸.png", "start": 188.0, "end": 201.0, "width": 310, "x": "W-w-90", "y": "180"},
-    {"file": "一键三连-绿幕.mp4", "start": 209.4, "end": 214.4, "width": 1300, "x": "(W-w)/2+260", "y": "0", "kind": "green_video"},
-    {"file": "Codex图标.png", "start": 218.6, "end": 229.1, "width": 390, "x": "W-w-120", "y": "110"},
+    {"file": "Codex图标.png", "start": 4.8, "end": 8.1, "width": 170, "x": "W-w-90", "y": "80"},
+    {"file": "Codex图标.png", "start": 16.3, "end": 21.7, "width": 135, "x": "W-w-100", "y": "80"},
+    {"file": "图标/OpenAI.png", "start": 43.5, "end": 52.5, "width": 175, "x": "80", "y": "80"},
+    {"file": "Codex图标.png", "start": 218.6, "end": 229.1, "width": 220, "x": "W-w-100", "y": "100"},
 ]
 
-TEXT_CARDS = [
-    {"text": "额度更高", "start": 8.3, "end": 9.7, "y": 70, "color": "#7DE2D1"},
-    {"text": "功能更全", "start": 9.7, "end": 11.1, "y": 70, "color": "#FFD166"},
-    {"text": "上手更快", "start": 11.1, "end": 12.5, "y": 70, "color": "#FF8C69"},
-    {"text": "不怕封号", "start": 12.5, "end": 13.8, "y": 70, "color": "#FFFFFF"},
-    {"text": "下载  →  登录  →  开始用", "start": 16.3, "end": 21.7, "y": 580, "size": 64, "color": "#FFFFFF"},
-    {"text": "评论区置顶", "start": 26.5, "end": 29.2, "y": 620, "size": 58, "color": "#FFD166"},
-    {"text": "PPT", "start": 46.8, "end": 48.0, "y": 170, "color": "#7DE2D1"},
-    {"text": "Excel", "start": 48.0, "end": 49.2, "y": 170, "color": "#7DE2D1"},
-    {"text": "操作浏览器", "start": 49.2, "end": 50.5, "y": 170, "color": "#7DE2D1"},
-    {"text": "剪视频", "start": 50.5, "end": 52.5, "y": 170, "color": "#FFD166"},
-    {"text": "GPT：告诉你怎么做", "start": 53.7, "end": 71.9, "y": 110, "size": 58, "color": "#FFFFFF", "x": 600},
-    {"text": "Codex：直接把活干完", "start": 80.5, "end": 94.8, "y": 110, "size": 62, "color": "#7DE2D1"},
-    {"text": "多个小工，并行开工", "start": 95.4, "end": 106.6, "y": 115, "size": 58, "color": "#FFD166"},
-    {"text": "打开项目  →  改代码  →  查资料  →  部署", "start": 110.4, "end": 125.7, "y": 500, "size": 54, "color": "#FFFFFF"},
-    {"text": "AGENT", "start": 125.7, "end": 127.9, "y": 160, "size": 108, "color": "#7DE2D1"},
-    {"text": "官网下载 · 安装 · 登录", "start": 128.3, "end": 131.0, "y": 150, "size": 66, "color": "#FFFFFF"},
-    {"text": "左：任务列表", "start": 143.4, "end": 144.9, "x": 90, "y": 130, "size": 46, "color": "#FF5F57"},
-    {"text": "中：对话区", "start": 144.9, "end": 146.3, "y": 130, "size": 46, "color": "#FFD166"},
-    {"text": "右：多功能区", "start": 146.3, "end": 147.8, "x": 1370, "y": 130, "size": 46, "color": "#28C840"},
-    {"text": "2025 百大讲师", "start": 162.6, "end": 174.5, "x": 1110, "y": 160, "size": 64, "color": "#FFD166"},
-    {"text": "内容创作", "start": 175.1, "end": 188.0, "x": 1150, "y": 180, "size": 72, "color": "#7DE2D1"},
-    {"text": "电商增长", "start": 188.0, "end": 201.0, "x": 120, "y": 180, "size": 72, "color": "#FF8C69"},
-    {"text": "现在上桌", "start": 218.6, "end": 229.1, "x": 120, "y": 170, "size": 92, "color": "#FFD166"},
+# Cards mirror the benchmark's restrained visual language: dark translucent
+# panels, one green accent, short labels and generous empty space.
+UI_CARDS = [
+    {"id": "hook", "title": "AI 圈新选手", "lines": ["OpenClaw  ·  Claude Code", "Codex 正式上桌"], "start": 1.9, "end": 8.1, "x": "70", "y": "70"},
+    {"id": "benefits", "title": "Codex 上桌门槛", "lines": ["额度更高  ·  功能更全", "上手更快  ·  账号直登"], "start": 8.3, "end": 13.8, "x": "70", "y": "70"},
+    {"id": "install", "title": "三步开始", "lines": ["官网下载  →  GPT 登录", "打开即可使用"], "start": 16.3, "end": 21.7, "x": "70", "y": "70"},
+    {"id": "magic", "title": "注册入口", "lines": ["评论区置顶链接", "领取注册“魔法”"], "start": 26.5, "end": 29.2, "x": "W-w-70", "y": "70"},
+    {"id": "identity", "title": "GENJI", "lines": ["AIGC 一线实践", "手把手带你做出结果"], "start": 30.0, "end": 41.9, "x": "70", "y": "70"},
+    {"id": "abilities", "title": "CODEX 能做什么", "lines": ["代码  ·  PPT  ·  Excel", "浏览器  ·  视频剪辑"], "start": 43.5, "end": 52.5, "x": "W-w-70", "y": "70"},
+    {"id": "gpt_recipe", "title": "GPT", "lines": ["给你一份菜谱", "执行仍然要靠自己"], "start": 53.7, "end": 71.9, "x": "70", "y": "70"},
+    {"id": "codex_cook", "title": "CODEX", "lines": ["不只告诉你怎么做", "直接把活干完"], "start": 80.5, "end": 94.8, "x": "W-w-70", "y": "70"},
+    {"id": "parallel", "title": "并行开工", "lines": ["检索  →  处理  →  校验", "多个小工互不打扰"], "start": 95.4, "end": 106.6, "x": "70", "y": "70"},
+    {"id": "workflow", "title": "AGENT 工作流", "lines": ["打开项目  →  改代码", "查资料  →  部署上线"], "start": 110.4, "end": 127.9, "x": "W-w-70", "y": "70"},
+    {"id": "download", "title": "安装与界面", "lines": ["下载  ·  登录  ·  新建任务", "接下来进入实机演示"], "start": 128.3, "end": 131.0, "x": "70", "y": "70"},
+    {"id": "screen_regions", "title": "界面结构", "lines": ["任务列表  ·  对话区", "多功能工作区"], "start": 143.4, "end": 147.8, "x": "W-w-70", "y": "60"},
+    {"id": "authority", "title": "长期一线经验", "lines": ["深耕 AIGC 六年", "2025 百大讲师"], "start": 162.6, "end": 174.5, "x": "70", "y": "70"},
+    {"id": "creator_case", "title": "内容创作", "lines": ["流程打包交付", "从重复劳动中释放"], "start": 175.1, "end": 188.0, "x": "W-w-70", "y": "70"},
+    {"id": "commerce_case", "title": "电商增长", "lines": ["批量处理  ·  稳定复用", "把工具变成生产力"], "start": 188.0, "end": 201.0, "x": "70", "y": "70"},
+    {"id": "cta", "title": "三连领取", "lines": ["完整可视化 SOP", "跟着流程直接开工"], "start": 209.4, "end": 214.4, "x": "W-w-70", "y": "70"},
+    {"id": "ending", "title": "新窗口已经开了", "lines": ["先做出来  ·  再慢慢变好", "现在上桌"], "start": 218.6, "end": 229.1, "x": "70", "y": "70"},
 ]
+
+TEXT_CARDS = []
 
 SCREEN_HIGHLIGHTS = [
-    {"start": 143.4, "end": 144.9, "x": 20, "y": 110, "w": 430, "h": 900, "color": "#FF5F57"},
-    {"start": 144.9, "end": 146.3, "x": 440, "y": 110, "w": 1030, "h": 900, "color": "#FFD166"},
-    {"start": 146.3, "end": 147.8, "x": 1460, "y": 110, "w": 440, "h": 900, "color": "#28C840"},
+    {"start": 143.4, "end": 144.9, "x": 20, "y": 110, "w": 430, "h": 790, "color": ACCENT},
+    {"start": 144.9, "end": 146.3, "x": 440, "y": 110, "w": 1030, "h": 790, "color": ACCENT},
+    {"start": 146.3, "end": 147.8, "x": 1460, "y": 110, "w": 440, "h": 790, "color": ACCENT},
 ]
 
-BGM_VOLUME = 0.075
+SUBTITLE_KEYWORDS = [
+    "AI", "OpenClaw", "Claude Code", "Codex", "GPT", "额度更高", "功能更全",
+    "上手更快", "Agent", "智能体", "打开项目", "改代码", "查资料", "部署上线",
+    "内容创作", "电商", "一键三连", "SOP", "普通人", "上桌",
+]
+
+BGM_VOLUME = 0.06
 VOICE_VOLUME = 1.05

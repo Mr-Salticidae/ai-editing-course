@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 import argparse
+import re
 import shutil
 import subprocess
 import sys
 from pathlib import Path
+
+from PIL import Image, ImageDraw, ImageFont
 
 import config
 
@@ -30,6 +33,93 @@ def drawtext_escape(value: str) -> str:
     )
 
 
+def ass_time(timestamp: str) -> str:
+    hours, minutes, rest = timestamp.replace(",", ".").split(":")
+    seconds = float(rest)
+    return f"{int(hours)}:{int(minutes):02d}:{seconds:05.2f}"
+
+
+def highlight_keywords(text: str) -> str:
+    safe = text.replace("{", r"\{").replace("}", r"\}")
+    keywords = sorted(config.SUBTITLE_KEYWORDS, key=len, reverse=True)
+    pattern = re.compile("(" + "|".join(re.escape(word) for word in keywords) + ")", re.IGNORECASE)
+    return pattern.sub(
+        lambda match: r"{\c&H75FF69&\b1}" + match.group(0) + r"{\c&HFFFFFF&\b0}",
+        safe,
+    )
+
+
+def generate_ass_subtitles() -> Path:
+    output = config.EDIT_DIR / "master_v2.ass"
+    output.parent.mkdir(parents=True, exist_ok=True)
+    blocks = re.split(r"\r?\n\r?\n", config.SUBTITLES.read_text(encoding="utf-8-sig").strip())
+    events: list[str] = []
+    for block in blocks:
+        lines = block.splitlines()
+        if len(lines) < 3 or " --> " not in lines[1]:
+            continue
+        start, end = lines[1].split(" --> ")
+        text = "".join(line.strip() for line in lines[2:])
+        events.append(
+            f"Dialogue: 0,{ass_time(start)},{ass_time(end)},Default,,0,0,0,,{highlight_keywords(text)}"
+        )
+
+    header = """[Script Info]
+ScriptType: v4.00+
+PlayResX: 1920
+PlayResY: 1080
+WrapStyle: 2
+ScaledBorderAndShadow: yes
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Default,Microsoft YaHei,40,&H00FFFFFF,&H00FFFFFF,&H00101010,&H80000000,-1,0,0,0,100,100,0,0,1,1.5,0,2,60,60,34,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+"""
+    output.write_text(header + "\n".join(events) + "\n", encoding="utf-8-sig")
+    return output
+
+
+def fit_font(path: Path, size: int, text: str, max_width: int) -> ImageFont.FreeTypeFont:
+    while size >= 18:
+        font = ImageFont.truetype(str(path), size)
+        if font.getlength(text) <= max_width:
+            return font
+        size -= 1
+    return ImageFont.truetype(str(path), 18)
+
+
+def generate_ui_cards() -> list[dict]:
+    output_dir = config.EDIT_DIR / "animations" / "ui_cards"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    width, height = 560, 180
+    generated: list[dict] = []
+    for card in config.UI_CARDS:
+        image = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+        draw = ImageDraw.Draw(image)
+        draw.rounded_rectangle(
+            (2, 2, width - 3, height - 3),
+            radius=16,
+            fill=(16, 20, 23, 226),
+            outline=(105, 255, 117, 210),
+            width=2,
+        )
+        draw.rounded_rectangle((2, 2, 11, height - 3), radius=5, fill=(105, 255, 117, 255))
+        title_font = fit_font(config.FONT_BOLD, 34, card["title"], width - 70)
+        draw.text((30, 21), card["title"], font=title_font, fill=(105, 255, 117, 255))
+        for index, line in enumerate(card["lines"]):
+            body_font = fit_font(config.FONT_REGULAR, 27, line, width - 70)
+            y = 78 + index * 42
+            draw.ellipse((31, y + 9, 39, y + 17), fill=(105, 255, 117, 230))
+            draw.text((50, y), line, font=body_font, fill=(244, 247, 248, 255))
+        path = output_dir / f"{card['id']}.png"
+        image.save(path)
+        generated.append({**card, "path": path, "width": width, "kind": "image"})
+    return generated
+
+
 def validate_inputs() -> None:
     required = [
         config.SOURCE,
@@ -47,25 +137,36 @@ def validate_inputs() -> None:
         raise RuntimeError("ffmpeg is not available on PATH")
 
 
-def build_command(draft: bool, output: Path, encoder: str) -> tuple[list[str], str]:
+def build_command(
+    draft: bool,
+    output: Path,
+    encoder: str,
+    subtitles: Path,
+    ui_cards: list[dict],
+) -> tuple[list[str], str]:
     command = ["ffmpeg", "-y", "-hide_banner", "-stats", "-i", str(config.SOURCE)]
     command += ["-i", str(config.SCREEN_RECORDING)]
     command += ["-stream_loop", "-1", "-i", str(config.BGM)]
 
+    overlays = [
+        {**item, "path": config.ASSET_DIR / item["file"]}
+        for item in config.OVERLAYS
+    ] + ui_cards
     asset_indexes: list[int] = []
-    for item in config.OVERLAYS:
+    for item in overlays:
         duration = item["end"] - item["start"]
-        path = config.ASSET_DIR / item["file"]
-        kind = item.get("kind", "image")
-        if kind == "image":
-            command += ["-stream_loop", "-1", "-framerate", str(config.FPS), "-t", ff(duration), "-i", str(path)]
-        elif kind == "animated_image":
-            command += ["-stream_loop", "-1", "-t", ff(duration), "-i", str(path)]
-        else:
-            command += ["-stream_loop", "-1", "-t", ff(duration), "-i", str(path)]
+        path = item["path"]
+        command += [
+            "-stream_loop", "-1", "-framerate", str(config.FPS),
+            "-t", ff(duration), "-i", str(path),
+        ]
         asset_indexes.append(len(asset_indexes) + 3)
 
-    filters: list[str] = ["[0:v]setpts=PTS-STARTPTS,format=yuv420p[base0]"]
+    filters: list[str] = [
+        "[0:v]scale=2048:1152:flags=lanczos,"
+        "crop=1920:1080:(iw-ow)/2:(ih-oh)/2,setsar=1,"
+        "setpts=PTS-STARTPTS,format=yuv420p[base0]"
+    ]
     screen_duration = config.SCREEN_INSERT["end"] - config.SCREEN_INSERT["start"]
     screen_source_end = config.SCREEN_INSERT["source_start"] + screen_duration
     filters.append(
@@ -77,20 +178,40 @@ def build_command(draft: bool, output: Path, encoder: str) -> tuple[list[str], s
     )
     filters.append(
         "[base0][screen]overlay=x=0:y=0:eof_action=pass:shortest=0:"
+        f"enable='between(t,{ff(config.SCREEN_INSERT['start'])},{ff(config.SCREEN_INSERT['end'])})'[screened]"
+    )
+
+    # Benchmark-style speaker picture-in-picture for the full-screen demo.
+    filters.append(
+        "[0:v]"
+        f"trim=start={ff(config.SCREEN_INSERT['start'])}:end={ff(config.SCREEN_INSERT['end'])},"
+        "crop=700:700:610:40,scale=250:250,format=rgba,"
+        "geq=r='r(X,Y)':g='g(X,Y)':b='b(X,Y)':"
+        "a='if(lte(hypot(X-W/2,Y-H/2),W/2),255,0)',"
+        f"setpts=PTS-STARTPTS+{ff(config.SCREEN_INSERT['start'])}/TB[pip]"
+    )
+    filters.append(
+        f"color=c=0x69FF75:s=270x270:d={ff(screen_duration)}:r={config.FPS},"
+        "format=rgba,geq=r='r(X,Y)':g='g(X,Y)':b='b(X,Y)':"
+        "a='if(lte(hypot(X-W/2,Y-H/2),W/2),255,0)',"
+        f"setpts=PTS-STARTPTS+{ff(config.SCREEN_INSERT['start'])}/TB[ring]"
+    )
+    filters.append(
+        "[screened][ring]overlay=x=55:y=625:eof_action=pass:shortest=0:"
+        f"enable='between(t,{ff(config.SCREEN_INSERT['start'])},{ff(config.SCREEN_INSERT['end'])})'[ringed]"
+    )
+    filters.append(
+        "[ringed][pip]overlay=x=65:y=635:eof_action=pass:shortest=0:"
         f"enable='between(t,{ff(config.SCREEN_INSERT['start'])},{ff(config.SCREEN_INSERT['end'])})'[v0]"
     )
 
     current = "v0"
-    for number, (item, index) in enumerate(zip(config.OVERLAYS, asset_indexes), start=1):
+    for number, (item, index) in enumerate(zip(overlays, asset_indexes), start=1):
         duration = item["end"] - item["start"]
-        fade = min(0.18, duration / 4)
-        kind = item.get("kind", "image")
-        transform = f"scale={item['width']}:-1:force_original_aspect_ratio=decrease"
-        if kind == "green_video":
-            transform += ",chromakey=0x00FF00:0.24:0.08"
+        fade = min(0.22, duration / 4)
         overlay_label = f"asset{number}"
         filters.append(
-            f"[{index}:v]{transform},format=rgba,"
+            f"[{index}:v]scale={item['width']}:-1:force_original_aspect_ratio=decrease,format=rgba,"
             f"fade=t=in:st=0:d={ff(fade)}:alpha=1,"
             f"fade=t=out:st={ff(duration - fade)}:d={ff(fade)}:alpha=1,"
             f"setpts=PTS-STARTPTS+{ff(item['start'])}/TB[{overlay_label}]"
@@ -105,45 +226,31 @@ def build_command(draft: bool, output: Path, encoder: str) -> tuple[list[str], s
 
     for number, card in enumerate(config.TEXT_CARDS, start=1):
         next_label = f"text{number}"
-        x = card.get("x", "(w-text_w)/2")
-        if isinstance(x, int):
-            x = str(x)
-        font = filter_path(config.FONT_BOLD)
+        x = str(card.get("x", "(w-text_w)/2"))
         filters.append(
-            f"[{current}]drawtext=fontfile='{font}':text='{drawtext_escape(card['text'])}':"
-            "expansion=none:"
-            f"fontsize={card.get('size', 74)}:fontcolor={card.get('color', '#FFFFFF')}:"
-            f"x={x}:y={card['y']}:box=1:boxcolor=0x101820@0.78:boxborderw=22:"
-            f"enable='between(t,{ff(card['start'])},{ff(card['end'])})'[{next_label}]"
+            f"[{current}]drawtext=fontfile='{filter_path(config.FONT_BOLD)}':"
+            f"text='{drawtext_escape(card['text'])}':expansion=none:"
+            f"fontsize={card.get('size', 56)}:fontcolor={card.get('color', config.ACCENT)}:"
+            f"x={x}:y={card['y']}:enable='between(t,{ff(card['start'])},{ff(card['end'])})'"
+            f"[{next_label}]"
         )
         current = next_label
 
     for number, box in enumerate(config.SCREEN_HIGHLIGHTS, start=1):
         next_label = f"box{number}"
-        color = box["color"].lstrip("#")
         filters.append(
             f"[{current}]drawbox=x={box['x']}:y={box['y']}:w={box['w']}:h={box['h']}:"
-            f"color=0x{color}@0.92:t=7:enable='between(t,{ff(box['start'])},{ff(box['end'])})'"
-            f"[{next_label}]"
+            f"color=0x{box['color'].lstrip('#')}@0.92:t=5:"
+            f"enable='between(t,{ff(box['start'])},{ff(box['end'])})'[{next_label}]"
         )
         current = next_label
 
-    subtitle_path = filter_path(config.SUBTITLES)
-    subtitle_style = (
-        "FontName=Microsoft YaHei,FontSize=50,PrimaryColour=&H00FFFFFF,"
-        "OutlineColour=&H00101010,BorderStyle=1,Outline=3,Shadow=0,"
-        "Alignment=2,MarginV=48"
-    )
-    filters.append(
-        f"[{current}]subtitles=filename='{subtitle_path}':force_style='{subtitle_style}'[subbed]"
-    )
-    if draft:
-        filters.append("[subbed]scale=960:540:flags=lanczos[vout]")
-    else:
-        filters.append("[subbed]null[vout]")
+    # The subtitle band and ASS captions are deliberately last so no overlay
+    # can obscure them.
+    filters.append(f"[{current}]drawbox=x=0:y=920:w=iw:h=120:color=black@0.58:t=fill[subbar]")
+    filters.append(f"[subbar]subtitles=filename='{filter_path(subtitles)}'[subbed]")
+    filters.append("[subbed]scale=960:540:flags=lanczos[vout]" if draft else "[subbed]null[vout]")
 
-    # Voice remains the timing backbone. BGM is looped, faded and mixed at
-    # roughly -22.5 dB so it supports the narration without masking it.
     filters.append(
         f"[0:a]highpass=f=70,lowpass=f=15000,volume={config.VOICE_VOLUME},"
         "acompressor=threshold=0.14:ratio=2.2:attack=15:release=180[voice]"
@@ -162,36 +269,39 @@ def build_command(draft: bool, output: Path, encoder: str) -> tuple[list[str], s
     filter_graph = ";\n".join(filters)
     command += ["-filter_complex_script", str(config.ROOT / "04_剪辑方案" / "render_filter.txt")]
     command += ["-map", "[vout]", "-map", "[aout]", "-t", ff(config.DURATION), "-r", str(config.FPS)]
-
     if encoder == "h264_nvenc":
-        command += ["-c:v", encoder, "-preset", "p5" if not draft else "p3", "-tune", "hq", "-rc", "vbr", "-cq", "19" if not draft else "27", "-b:v", "0"]
+        command += [
+            "-c:v", encoder, "-preset", "p5" if not draft else "p3", "-tune", "hq",
+            "-rc", "vbr", "-cq", "19" if not draft else "27", "-b:v", "0",
+        ]
     else:
-        command += ["-c:v", "libx264", "-preset", "medium" if not draft else "ultrafast", "-crf", "18" if not draft else "28"]
+        command += [
+            "-c:v", "libx264", "-preset", "medium" if not draft else "ultrafast",
+            "-crf", "18" if not draft else "28",
+        ]
     command += [
-        "-pix_fmt", "yuv420p",
-        "-c:a", "aac",
-        "-ar", "48000",
-        "-b:a", "192k" if not draft else "128k",
-        "-movflags", "+faststart",
-        str(output),
+        "-pix_fmt", "yuv420p", "-c:a", "aac", "-ar", "48000",
+        "-b:a", "192k" if not draft else "128k", "-movflags", "+faststart", str(output),
     ]
     return command, filter_graph
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Render the approved Codex tutorial edit.")
+    parser = argparse.ArgumentParser(description="Render the benchmark-aligned Codex tutorial edit.")
     parser.add_argument("--draft", action="store_true", help="Render a 960x540 review copy.")
     parser.add_argument("--encoder", choices=("libx264", "h264_nvenc"), default="libx264")
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
 
     validate_inputs()
+    subtitles = generate_ass_subtitles()
+    ui_cards = generate_ui_cards()
     config.OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     output = args.output or config.OUTPUT_DIR / (
-        "Codex保姆级教学_审核预览_v1.mp4" if args.draft else "Codex保姆级教学_成片_v1.mp4"
+        "Codex保姆级教学_审核预览_v2.mp4" if args.draft else "Codex保姆级教学_成片_v2.mp4"
     )
     output = output.resolve()
-    command, filter_graph = build_command(args.draft, output, args.encoder)
+    command, filter_graph = build_command(args.draft, output, args.encoder, subtitles, ui_cards)
     filter_file = config.ROOT / "04_剪辑方案" / "render_filter.txt"
     filter_file.write_text(filter_graph, encoding="utf-8")
 
