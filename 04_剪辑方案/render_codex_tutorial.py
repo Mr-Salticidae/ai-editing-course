@@ -500,10 +500,8 @@ def build_command(
         )
         current = next_label
 
-    # The subtitle band and ASS captions are deliberately last so no overlay
-    # can obscure them.
-    filters.append(f"[{current}]drawbox=x=0:y=920:w=iw:h=120:color=black@0.58:t=fill[subbar]")
-    filters.append(f"[subbar]subtitles=filename='{filter_path(subtitles)}'[subbed]")
+    # ASS captions stay last so no overlay can obscure them.
+    filters.append(f"[{current}]subtitles=filename='{filter_path(subtitles)}'[subbed]")
     filters.append("[subbed]scale=960:540:flags=lanczos[vout]" if draft else "[subbed]null[vout]")
 
     filters.append(
@@ -556,9 +554,9 @@ def main() -> int:
     screen_freeze = generate_screen_freeze()
     config.OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     output = args.output or config.OUTPUT_DIR / (
-        "Codex保姆级教学_审核预览_v2.3.8.mp4"
+        "Codex保姆级教学_审核预览_v2.3.9.mp4"
         if args.draft
-        else "Codex保姆级教学_成片_v2.3.8.mp4"
+        else "Codex保姆级教学_成片_v2.3.9.mp4"
     )
     output = output.resolve()
     command, filter_graph = build_command(
