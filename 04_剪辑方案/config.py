@@ -78,10 +78,10 @@ UI_CARDS = [
 ]
 
 CHARTS = [
-    {"id": "compare", "title": "从建议到执行", "nodes": ["GPT\n给方案", "Codex\n直接执行", "交付\n结果"], "start": 72.0, "end": 80.5, "x": "460", "y": "540", "width": 1000, "height": 320},
-    {"id": "workers", "title": "多个小工并行协作", "nodes": ["检索", "处理", "校验", "汇总"], "start": 100.0, "end": 106.6, "x": "460", "y": "540", "width": 1000, "height": 320},
-    {"id": "agent_flow", "title": "AGENT 连续动作", "nodes": ["打开项目", "改代码", "查资料", "部署上线"], "start": 114.0, "end": 125.7, "x": "460", "y": "540", "width": 1000, "height": 320},
-    {"id": "business", "title": "工具进入真实业务", "nodes": ["内容创作", "批量处理", "电商增长", "稳定复用"], "start": 179.0, "end": 201.0, "x": "460", "y": "540", "width": 1000, "height": 320},
+    {"id": "compare", "title": "从建议到执行", "nodes": ["GPT\n给方案", "Codex\n直接执行", "交付\n结果"], "start": 72.0, "end": 80.5, "x": "60", "y": "470", "width": 640, "height": 300},
+    {"id": "workers", "title": "多个小工并行协作", "nodes": ["检索", "处理", "校验", "汇总"], "start": 100.0, "end": 106.6, "x": "1220", "y": "470", "width": 640, "height": 300},
+    {"id": "agent_flow", "title": "AGENT 连续动作", "nodes": ["打开项目", "改代码", "查资料", "部署上线"], "start": 114.0, "end": 125.7, "x": "60", "y": "470", "width": 640, "height": 300},
+    {"id": "business", "title": "工具进入真实业务", "nodes": ["内容创作", "批量处理", "电商增长", "稳定复用"], "start": 179.0, "end": 201.0, "x": "1220", "y": "470", "width": 640, "height": 300},
 ]
 
 TEXT_CARDS = []

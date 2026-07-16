@@ -73,7 +73,7 @@ ScaledBorderAndShadow: yes
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Default,Microsoft YaHei,40,&H00FFFFFF,&H00FFFFFF,&H00101010,&H80000000,-1,0,0,0,100,100,0,0,1,1.5,0,2,60,60,76,1
+Style: Default,Microsoft YaHei,40,&H00FFFFFF,&H00FFFFFF,&H00101010,&H80000000,-1,0,0,0,100,100,0,0,1,1.5,0,2,60,60,150,1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
@@ -160,9 +160,12 @@ def generate_charts() -> list[dict]:
                     fill=(105, 255, 117, 235),
                 )
 
-            node_font = ImageFont.truetype(str(config.FONT_BOLD), 27)
             for index in range(stage):
                 center_x, center_y = centers[index]
+                longest_line = max(nodes[index].splitlines(), key=len)
+                node_font = fit_font(
+                    config.FONT_BOLD, 25, longest_line, node_width - 16
+                )
                 box = (
                     int(center_x - node_width / 2),
                     int(center_y - node_height / 2),
@@ -270,7 +273,7 @@ def generate_progress_assets() -> list[dict]:
                 "start": section["start"],
                 "end": section["end"],
                 "x": "140",
-                "y": "860",
+                "y": "1004",
                 "width": width,
                 "kind": "image",
             }
@@ -283,7 +286,7 @@ def generate_progress_assets() -> list[dict]:
             "start": 0.0,
             "end": config.DURATION,
             "x": f"'160+(1600-w)*min(t,{ff(config.DURATION)})/{ff(config.DURATION)}'",
-            "y": "'804-3*abs(sin(PI*t*2))'",
+            "y": "'937-3*abs(sin(PI*t*2))'",
             "width": 64,
             "kind": "image",
         }
@@ -441,7 +444,7 @@ def build_command(
     )
 
     filters.append(
-        "[v0]drawbox=x=160:y=868:w=1600:h=6:"
+        "[v0]drawbox=x=160:y=1014:w=1600:h=6:"
         "color=0x454D4A@0.88:t=fill[progressrail]"
     )
     filters.append(
@@ -451,7 +454,7 @@ def build_command(
         f"a='if(lte(X,1600*T/{ff(config.DURATION)}),245,0)'[progressbar]"
     )
     filters.append(
-        "[progressrail][progressbar]overlay=x=160:y=868:"
+        "[progressrail][progressbar]overlay=x=160:y=1014:"
         "eof_action=pass:shortest=0[progressfill]"
     )
     current = "progressfill"
@@ -554,9 +557,9 @@ def main() -> int:
     screen_freeze = generate_screen_freeze()
     config.OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     output = args.output or config.OUTPUT_DIR / (
-        "Codex保姆级教学_审核预览_v2.3.9.mp4"
+        "Codex保姆级教学_审核预览_v2.4.1.mp4"
         if args.draft
-        else "Codex保姆级教学_成片_v2.3.9.mp4"
+        else "Codex保姆级教学_成片_v2.4.1.mp4"
     )
     output = output.resolve()
     command, filter_graph = build_command(
