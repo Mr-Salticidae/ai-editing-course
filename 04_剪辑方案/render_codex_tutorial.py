@@ -206,6 +206,77 @@ def generate_charts() -> list[dict]:
     return generated
 
 
+def generate_progress_assets() -> list[dict]:
+    output_dir = config.EDIT_DIR / "animations" / "progress"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    width, height = 1760, 56
+    rail_left, rail_right, rail_y = 20, width - 20, 10
+    label_font = ImageFont.truetype(str(config.FONT_BOLD), 23)
+    generated: list[dict] = []
+
+    for active_index, section in enumerate(config.PROGRESS_SECTIONS):
+        image = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+        draw = ImageDraw.Draw(image)
+        for index, item in enumerate(config.PROGRESS_SECTIONS):
+            segment_left = rail_left + (rail_right - rail_left) * item["start"] / config.DURATION
+            segment_right = rail_left + (rail_right - rail_left) * item["end"] / config.DURATION
+            x = round(segment_left)
+            active = index == active_index
+            passed = index < active_index
+            fill = (
+                (105, 255, 117, 255)
+                if active
+                else ((105, 255, 117, 215) if passed else (92, 101, 98, 230))
+            )
+            radius = 8 if active else 6
+            draw.ellipse(
+                (x - radius, rail_y - radius, x + radius, rail_y + radius),
+                fill=fill,
+            )
+            label = item["label"]
+            box = draw.textbbox((0, 0), label, font=label_font)
+            text_width = box[2] - box[0]
+            label_center = (segment_left + segment_right) / 2
+            text_x = max(0, min(width - text_width, label_center - text_width / 2))
+            text_fill = (105, 255, 117, 255) if active else (218, 224, 222, 205)
+            draw.text((text_x, 27), label, font=label_font, fill=text_fill)
+
+        end_x = rail_right
+        draw.ellipse(
+            (end_x - 6, rail_y - 6, end_x + 6, rail_y + 6),
+            fill=(92, 101, 98, 230),
+        )
+
+        path = output_dir / f"section_{active_index + 1}_{section['id']}.png"
+        image.save(path)
+        generated.append(
+            {
+                "id": f"progress_{section['id']}",
+                "path": path,
+                "start": section["start"],
+                "end": section["end"],
+                "x": "80",
+                "y": "860",
+                "width": width,
+                "kind": "image",
+            }
+        )
+
+    generated.append(
+        {
+            "id": "progress_genji",
+            "path": config.PROGRESS_ICON,
+            "start": 0.0,
+            "end": config.DURATION,
+            "x": f"'100+(1720-w)*min(t,{ff(config.DURATION)})/{ff(config.DURATION)}'",
+            "y": "'804-3*abs(sin(PI*t*2))'",
+            "width": 64,
+            "kind": "image",
+        }
+    )
+    return generated
+
+
 def validate_inputs() -> None:
     required = [
         config.SOURCE,
@@ -214,6 +285,7 @@ def validate_inputs() -> None:
         config.SUBTITLES,
         config.FONT_REGULAR,
         config.FONT_BOLD,
+        config.PROGRESS_ICON,
     ]
     required.extend(config.ASSET_DIR / item["file"] for item in config.OVERLAYS)
     missing = [str(path) for path in required if not path.exists()]
@@ -230,6 +302,7 @@ def build_command(
     subtitles: Path,
     ui_cards: list[dict],
     charts: list[dict],
+    progress_assets: list[dict],
 ) -> tuple[list[str], str]:
     command = ["ffmpeg", "-y", "-hide_banner", "-stats", "-i", str(config.SOURCE)]
     command += ["-i", str(config.SCREEN_RECORDING)]
@@ -238,7 +311,7 @@ def build_command(
     overlays = [
         {**item, "path": config.ASSET_DIR / item["file"]}
         for item in config.OVERLAYS
-    ] + ui_cards + charts
+    ] + ui_cards + charts + progress_assets
     asset_indexes: list[int] = []
     for item in overlays:
         duration = item["end"] - item["start"]
@@ -292,7 +365,16 @@ def build_command(
         f"enable='between(t,{ff(config.SCREEN_INSERT['start'])},{ff(config.SCREEN_INSERT['end'])})'[v0]"
     )
 
-    current = "v0"
+    filters.append(
+        "[v0]drawbox=x=100:y=868:w=1720:h=6:"
+        "color=0x454D4A@0.88:t=fill[progressrail]"
+    )
+    filters.append(
+        f"[progressrail]drawbox=x=100:y=868:"
+        f"w='max(1,1720*t/{ff(config.DURATION)})':"
+        "h=6:color=0x69FF75@0.96:t=fill[progressfill]"
+    )
+    current = "progressfill"
     for number, (item, index) in enumerate(zip(overlays, asset_indexes), start=1):
         duration = item["end"] - item["start"]
         fade = min(0.22, duration / 4)
@@ -390,12 +472,17 @@ def main() -> int:
     subtitles = generate_ass_subtitles()
     ui_cards = generate_ui_cards()
     charts = generate_charts()
+    progress_assets = generate_progress_assets()
     config.OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     output = args.output or config.OUTPUT_DIR / (
-        "Codex保姆级教学_审核预览_v2.mp4" if args.draft else "Codex保姆级教学_成片_v2.mp4"
+        "Codex保姆级教学_审核预览_v2.3.mp4"
+        if args.draft
+        else "Codex保姆级教学_成片_v2.3.mp4"
     )
     output = output.resolve()
-    command, filter_graph = build_command(args.draft, output, args.encoder, subtitles, ui_cards, charts)
+    command, filter_graph = build_command(
+        args.draft, output, args.encoder, subtitles, ui_cards, charts, progress_assets
+    )
     filter_file = config.ROOT / "04_剪辑方案" / "render_filter.txt"
     filter_file.write_text(filter_graph, encoding="utf-8")
 

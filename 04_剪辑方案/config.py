@@ -23,6 +23,19 @@ SCREEN_INSERT = {
     "source_start": 0.0,
 }
 
+PROGRESS_ICON = ASSET_DIR / "genji像素小人.png"
+PROGRESS_SECTIONS = [
+    {"id": "entry", "label": "入门", "start": 0.0, "end": 26.54},
+    {"id": "intro", "label": "认识", "start": 26.54, "end": 52.84},
+    {"id": "difference", "label": "区别", "start": 52.84, "end": 78.56},
+    {"id": "execution", "label": "执行", "start": 78.56, "end": 105.1},
+    {"id": "agent", "label": "Agent", "start": 105.1, "end": 128.32},
+    {"id": "demo", "label": "演示", "start": 128.32, "end": 154.56},
+    {"id": "scenes", "label": "场景", "start": 154.56, "end": 180.14},
+    {"id": "cases", "label": "案例", "start": 180.14, "end": 204.98},
+    {"id": "ending", "label": "收尾", "start": 204.98, "end": DURATION},
+]
+
 # v2 keeps brand marks only. Explanatory content is rendered through the
 # consistent UI card system below instead of unrelated sticker illustrations.
 OVERLAYS = [
