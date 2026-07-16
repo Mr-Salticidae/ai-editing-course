@@ -211,7 +211,7 @@ def generate_progress_assets() -> list[dict]:
     output_dir.mkdir(parents=True, exist_ok=True)
     width, height = 1760, 56
     rail_left, rail_right, rail_y = 20, width - 20, 10
-    label_font = ImageFont.truetype(str(config.FONT_BOLD), 23)
+    label_font = ImageFont.truetype(str(config.FONT_BOLD), 28)
     generated: list[dict] = []
 
     for active_index, section in enumerate(config.PROGRESS_SECTIONS):
@@ -238,8 +238,15 @@ def generate_progress_assets() -> list[dict]:
             text_width = box[2] - box[0]
             label_center = (segment_left + segment_right) / 2
             text_x = max(0, min(width - text_width, label_center - text_width / 2))
-            text_fill = (105, 255, 117, 255) if active else (218, 224, 222, 205)
-            draw.text((text_x, 27), label, font=label_font, fill=text_fill)
+            text_fill = (105, 255, 117, 255) if active else (246, 249, 248, 245)
+            draw.text(
+                (text_x, 23),
+                label,
+                font=label_font,
+                fill=text_fill,
+                stroke_width=3,
+                stroke_fill=(10, 14, 13, 235),
+            )
 
         end_x = rail_right
         draw.ellipse(
