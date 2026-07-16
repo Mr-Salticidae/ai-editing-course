@@ -15,6 +15,11 @@ Thumbs.db
 Desktop.ini
 ~$*
 *.tmp
+__pycache__/
+
+# 剪辑渲染中间文件
+04_剪辑方案/render_filter.txt
+04_剪辑方案/预览工作区/
 
 # Node（若后续引入 Remotion）
 node_modules/
