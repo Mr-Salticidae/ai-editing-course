@@ -41,6 +41,10 @@ Codex Groove (BGM for tutorial)
 - 禁项：无人声、无突兀鼓花、中段不要大动态起伏（会顶人声）
 ```
 
+## 产出记录
+
+- 2026-07-16：《Tool That Lands》已入库 → `BGM_Codex教学_v1_ToolThatLands.wav`（2:59.96）。若审听后需要固化/改结构，再走阶段二 Custom Mode。
+
 ## 交付与使用
 
 - 成品命名 `BGM_Codex教学_v N.mp3` 放本目录（音频不入 git，走本地/网盘）。
