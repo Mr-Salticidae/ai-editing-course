@@ -284,6 +284,29 @@ def generate_progress_assets() -> list[dict]:
     return generated
 
 
+def generate_screen_freeze() -> Path:
+    output = config.EDIT_DIR / "animations" / "screen_freeze.png"
+    output.parent.mkdir(parents=True, exist_ok=True)
+    subprocess.run(
+        [
+            "ffmpeg",
+            "-y",
+            "-hide_banner",
+            "-loglevel",
+            "error",
+            "-ss",
+            "13.0",
+            "-i",
+            str(config.SCREEN_RECORDING),
+            "-frames:v",
+            "1",
+            str(output),
+        ],
+        check=True,
+    )
+    return output
+
+
 def validate_inputs() -> None:
     required = [
         config.SOURCE,
@@ -310,10 +333,23 @@ def build_command(
     ui_cards: list[dict],
     charts: list[dict],
     progress_assets: list[dict],
+    screen_freeze: Path,
 ) -> tuple[list[str], str]:
     command = ["ffmpeg", "-y", "-hide_banner", "-stats", "-i", str(config.SOURCE)]
     command += ["-i", str(config.SCREEN_RECORDING)]
     command += ["-stream_loop", "-1", "-i", str(config.BGM)]
+    freeze_start = config.SCREEN_HIGHLIGHTS[0]["start"]
+    freeze_end = config.SCREEN_HIGHLIGHTS[-1]["end"]
+    command += [
+        "-loop",
+        "1",
+        "-framerate",
+        str(config.FPS),
+        "-t",
+        ff(freeze_end - freeze_start),
+        "-i",
+        str(screen_freeze),
+    ]
 
     overlays = [
         {**item, "path": config.ASSET_DIR / item["file"]}
@@ -327,7 +363,7 @@ def build_command(
             "-stream_loop", "-1", "-framerate", str(config.FPS),
             "-t", ff(duration), "-i", str(path),
         ]
-        asset_indexes.append(len(asset_indexes) + 3)
+        asset_indexes.append(len(asset_indexes) + 4)
 
     filters: list[str] = [
         "[0:v]scale=2048:1152:flags=lanczos,"
@@ -335,17 +371,42 @@ def build_command(
         "setpts=PTS-STARTPTS,format=yuv420p[base0]"
     ]
     screen_duration = config.SCREEN_INSERT["end"] - config.SCREEN_INSERT["start"]
-    screen_source_end = config.SCREEN_INSERT["source_start"] + screen_duration
+    skip_duration = config.SCREEN_GLITCH_SKIP["end"] - config.SCREEN_GLITCH_SKIP["start"]
+    screen_source_end = (
+        config.SCREEN_INSERT["source_start"] + screen_duration + skip_duration
+    )
+    filters.append("[1:v]split=2[screen_a_src][screen_b_src]")
     filters.append(
-        "[1:v]"
-        f"trim=start={ff(config.SCREEN_INSERT['source_start'])}:end={ff(screen_source_end)},"
+        "[screen_a_src]"
+        f"trim=start={ff(config.SCREEN_INSERT['source_start'])}:"
+        f"end={ff(config.SCREEN_GLITCH_SKIP['start'])},"
+        "setpts=PTS-STARTPTS[screen_a]"
+    )
+    filters.append(
+        "[screen_b_src]"
+        f"trim=start={ff(config.SCREEN_GLITCH_SKIP['end'])}:"
+        f"end={ff(screen_source_end)},"
+        "setpts=PTS-STARTPTS[screen_b]"
+    )
+    filters.append(
+        "[screen_a][screen_b]concat=n=2:v=1:a=0,"
         f"setpts=PTS-STARTPTS+{ff(config.SCREEN_INSERT['start'])}/TB,"
         "scale=1920:1080:force_original_aspect_ratio=decrease,"
         "pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=white[screen]"
     )
     filters.append(
+        "[3:v]"
+        "scale=1920:1080:force_original_aspect_ratio=decrease,"
+        "pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=white,"
+        f"setpts=PTS-STARTPTS+{ff(freeze_start)}/TB[screen_freeze]"
+    )
+    filters.append(
         "[base0][screen]overlay=x=0:y=0:eof_action=pass:shortest=0:"
-        f"enable='between(t,{ff(config.SCREEN_INSERT['start'])},{ff(config.SCREEN_INSERT['end'])})'[screened]"
+        f"enable='between(t,{ff(config.SCREEN_INSERT['start'])},{ff(config.SCREEN_INSERT['end'])})'[screened_live]"
+    )
+    filters.append(
+        "[screened_live][screen_freeze]overlay=x=0:y=0:eof_action=pass:shortest=0:"
+        f"enable='between(t,{ff(freeze_start)},{ff(freeze_end)})'[screened]"
     )
 
     # Benchmark-style speaker picture-in-picture for the full-screen demo.
@@ -480,15 +541,23 @@ def main() -> int:
     ui_cards = generate_ui_cards()
     charts = generate_charts()
     progress_assets = generate_progress_assets()
+    screen_freeze = generate_screen_freeze()
     config.OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     output = args.output or config.OUTPUT_DIR / (
-        "Codex保姆级教学_审核预览_v2.3.mp4"
+        "Codex保姆级教学_审核预览_v2.3.6.mp4"
         if args.draft
-        else "Codex保姆级教学_成片_v2.3.mp4"
+        else "Codex保姆级教学_成片_v2.3.6.mp4"
     )
     output = output.resolve()
     command, filter_graph = build_command(
-        args.draft, output, args.encoder, subtitles, ui_cards, charts, progress_assets
+        args.draft,
+        output,
+        args.encoder,
+        subtitles,
+        ui_cards,
+        charts,
+        progress_assets,
+        screen_freeze,
     )
     filter_file = config.ROOT / "04_剪辑方案" / "render_filter.txt"
     filter_file.write_text(filter_graph, encoding="utf-8")

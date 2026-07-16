@@ -22,6 +22,7 @@ SCREEN_INSERT = {
     "end": 154.4,
     "source_start": 0.0,
 }
+SCREEN_GLITCH_SKIP = {"start": 13.25, "end": 15.0}
 
 PROGRESS_ICON = ASSET_DIR / "genji像素小人.png"
 PROGRESS_SECTIONS = [
@@ -65,7 +66,7 @@ UI_CARDS = [
     {"id": "workflow", "title": "AGENT 工作流", "lines": ["打开项目  →  改代码", "查资料  →  部署上线"], "start": 110.4, "end": 114.0, "x": "W-w-70", "y": "70"},
     {"id": "agent_name", "title": "所以叫 AGENT", "lines": ["理解目标", "自主完成连续动作"], "start": 125.7, "end": 127.9, "x": "W-w-70", "y": "70"},
     {"id": "download", "title": "安装与界面", "lines": ["下载  ·  登录  ·  新建任务", "接下来进入实机演示"], "start": 128.3, "end": 131.0, "x": "70", "y": "70"},
-    {"id": "screen_regions", "title": "界面结构", "lines": ["任务列表  ·  对话区", "多功能工作区"], "start": 143.4, "end": 149.6, "x": "W-w-70", "y": "60"},
+    {"id": "screen_regions", "title": "界面结构", "lines": ["任务入口  ·  对话输入", "扩展连接区"], "start": 143.4, "end": 149.6, "x": "W-w-70", "y": "60"},
     {"id": "task_demo", "title": "任务演示", "lines": ["收集近期 AI 热点", "正在联网检索"], "start": 149.6, "end": 154.4, "x": "W-w-70", "y": "60"},
     {"id": "appetizer", "title": "这只是开胃菜", "lines": ["先看清工具能力", "再进入真实业务"], "start": 154.6, "end": 162.6, "x": "70", "y": "70"},
     {"id": "authority", "title": "长期一线经验", "lines": ["深耕 AIGC 六年", "2025 百大讲师"], "start": 162.6, "end": 174.5, "x": "70", "y": "70"},
@@ -86,9 +87,9 @@ CHARTS = [
 TEXT_CARDS = []
 
 SCREEN_HIGHLIGHTS = [
-    {"start": 143.4, "end": 144.9, "x": 20, "y": 110, "w": 430, "h": 790, "color": ACCENT},
-    {"start": 144.9, "end": 146.3, "x": 440, "y": 110, "w": 1030, "h": 790, "color": ACCENT},
-    {"start": 146.3, "end": 147.8, "x": 1460, "y": 110, "w": 440, "h": 790, "color": ACCENT},
+    {"start": 143.4, "end": 144.9, "x": 55, "y": 45, "w": 100, "h": 100, "color": ACCENT},
+    {"start": 144.9, "end": 146.3, "x": 865, "y": 590, "w": 930, "h": 215, "color": ACCENT},
+    {"start": 146.3, "end": 147.8, "x": 900, "y": 805, "w": 860, "h": 55, "color": ACCENT},
 ]
 
 SUBTITLE_KEYWORDS = [
