@@ -102,7 +102,7 @@ def generate_ui_cards() -> list[dict]:
         draw.rounded_rectangle(
             (2, 2, width - 3, height - 3),
             radius=16,
-            fill=(16, 20, 23, 226),
+            fill=(16, 20, 23, 204),
             outline=(105, 255, 117, 210),
             width=2,
         )
@@ -116,7 +116,93 @@ def generate_ui_cards() -> list[dict]:
             draw.text((50, y), line, font=body_font, fill=(244, 247, 248, 255))
         path = output_dir / f"{card['id']}.png"
         image.save(path)
-        generated.append({**card, "path": path, "width": width, "kind": "image"})
+        generated.append({**card, "path": path, "width": width, "kind": "image", "animated": True})
+    return generated
+
+
+def generate_charts() -> list[dict]:
+    output_dir = config.EDIT_DIR / "animations" / "charts"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    generated: list[dict] = []
+    for chart in config.CHARTS:
+        width, height = chart["width"], chart["height"]
+        nodes = chart["nodes"]
+        stage_duration = (chart["end"] - chart["start"]) / len(nodes)
+        for stage in range(1, len(nodes) + 1):
+            image = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+            draw = ImageDraw.Draw(image)
+            draw.rounded_rectangle(
+                (2, 2, width - 3, height - 3),
+                radius=20,
+                fill=(16, 20, 23, 204),
+                outline=(105, 255, 117, 210),
+                width=2,
+            )
+            title_font = fit_font(config.FONT_BOLD, 34, chart["title"], width - 70)
+            draw.text((32, 22), chart["title"], font=title_font, fill=(105, 255, 117, 255))
+
+            count = len(nodes)
+            node_width = min(190, (width - 100 - (count - 1) * 40) // count)
+            node_height = 105
+            gap = (width - 80 - count * node_width) / max(count - 1, 1)
+            top = 120
+            centers: list[tuple[float, float]] = []
+            for index in range(count):
+                left = 40 + index * (node_width + gap)
+                centers.append((left + node_width / 2, top + node_height / 2))
+
+            for index in range(stage - 1):
+                x1, y1 = centers[index]
+                x2, y2 = centers[index + 1]
+                draw.line((x1 + node_width / 2, y1, x2 - node_width / 2, y2), fill=(105, 255, 117, 220), width=5)
+                draw.polygon(
+                    [(x2 - node_width / 2, y2), (x2 - node_width / 2 - 13, y2 - 8), (x2 - node_width / 2 - 13, y2 + 8)],
+                    fill=(105, 255, 117, 235),
+                )
+
+            node_font = ImageFont.truetype(str(config.FONT_BOLD), 27)
+            for index in range(stage):
+                center_x, center_y = centers[index]
+                box = (
+                    int(center_x - node_width / 2),
+                    int(center_y - node_height / 2),
+                    int(center_x + node_width / 2),
+                    int(center_y + node_height / 2),
+                )
+                draw.rounded_rectangle(box, radius=14, fill=(32, 64, 40, 235), outline=(105, 255, 117, 255), width=3)
+                text_box = draw.multiline_textbbox((0, 0), nodes[index], font=node_font, spacing=4, align="center")
+                text_width = text_box[2] - text_box[0]
+                text_height = text_box[3] - text_box[1]
+                draw.multiline_text(
+                    (center_x - text_width / 2, center_y - text_height / 2 - 2),
+                    nodes[index],
+                    font=node_font,
+                    fill=(246, 249, 247, 255),
+                    spacing=4,
+                    align="center",
+                )
+
+            progress_width = int((width - 64) * stage / count)
+            draw.rounded_rectangle((32, height - 24, width - 32, height - 16), radius=4, fill=(55, 63, 60, 190))
+            draw.rounded_rectangle((32, height - 24, 32 + progress_width, height - 16), radius=4, fill=(105, 255, 117, 255))
+
+            path = output_dir / f"{chart['id']}_{stage}.png"
+            image.save(path)
+            start = chart["start"] + (stage - 1) * stage_duration
+            end = chart["start"] + stage * stage_duration
+            generated.append(
+                {
+                    "id": f"{chart['id']}_{stage}",
+                    "path": path,
+                    "start": start,
+                    "end": end,
+                    "x": chart["x"],
+                    "y": chart["y"],
+                    "width": width,
+                    "kind": "image",
+                    "animated": True,
+                }
+            )
     return generated
 
 
@@ -143,6 +229,7 @@ def build_command(
     encoder: str,
     subtitles: Path,
     ui_cards: list[dict],
+    charts: list[dict],
 ) -> tuple[list[str], str]:
     command = ["ffmpeg", "-y", "-hide_banner", "-stats", "-i", str(config.SOURCE)]
     command += ["-i", str(config.SCREEN_RECORDING)]
@@ -151,7 +238,7 @@ def build_command(
     overlays = [
         {**item, "path": config.ASSET_DIR / item["file"]}
         for item in config.OVERLAYS
-    ] + ui_cards
+    ] + ui_cards + charts
     asset_indexes: list[int] = []
     for item in overlays:
         duration = item["end"] - item["start"]
@@ -217,8 +304,14 @@ def build_command(
             f"setpts=PTS-STARTPTS+{ff(item['start'])}/TB[{overlay_label}]"
         )
         next_label = f"v{number}"
+        y_expression = str(item["y"])
+        if item.get("animated"):
+            y_expression = (
+                f"'{item['y']}+if(lt(t,{ff(item['start'] + 0.42)}),"
+                f"24*pow(1-(t-{ff(item['start'])})/0.42,3),0)'"
+            )
         filters.append(
-            f"[{current}][{overlay_label}]overlay=x={item['x']}:y={item['y']}:"
+            f"[{current}][{overlay_label}]overlay=x={item['x']}:y={y_expression}:"
             f"eof_action=pass:shortest=0:enable='between(t,{ff(item['start'])},{ff(item['end'])})'"
             f"[{next_label}]"
         )
@@ -296,12 +389,13 @@ def main() -> int:
     validate_inputs()
     subtitles = generate_ass_subtitles()
     ui_cards = generate_ui_cards()
+    charts = generate_charts()
     config.OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     output = args.output or config.OUTPUT_DIR / (
         "Codex保姆级教学_审核预览_v2.mp4" if args.draft else "Codex保姆级教学_成片_v2.mp4"
     )
     output = output.resolve()
-    command, filter_graph = build_command(args.draft, output, args.encoder, subtitles, ui_cards)
+    command, filter_graph = build_command(args.draft, output, args.encoder, subtitles, ui_cards, charts)
     filter_file = config.ROOT / "04_剪辑方案" / "render_filter.txt"
     filter_file.write_text(filter_graph, encoding="utf-8")
 
