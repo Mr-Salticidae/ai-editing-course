@@ -209,7 +209,7 @@ def generate_charts() -> list[dict]:
 def generate_progress_assets() -> list[dict]:
     output_dir = config.EDIT_DIR / "animations" / "progress"
     output_dir.mkdir(parents=True, exist_ok=True)
-    width, height = 1760, 56
+    width, height = 1640, 56
     rail_left, rail_right, rail_y = 20, width - 20, 10
     label_font = ImageFont.truetype(str(config.FONT_BOLD), 28)
     generated: list[dict] = []
@@ -249,9 +249,16 @@ def generate_progress_assets() -> list[dict]:
             )
 
         end_x = rail_right
+        end_active = active_index == len(config.PROGRESS_SECTIONS) - 1
+        end_radius = 8 if end_active else 6
         draw.ellipse(
-            (end_x - 6, rail_y - 6, end_x + 6, rail_y + 6),
-            fill=(92, 101, 98, 230),
+            (
+                end_x - end_radius,
+                rail_y - end_radius,
+                end_x + end_radius,
+                rail_y + end_radius,
+            ),
+            fill=(105, 255, 117, 255) if end_active else (92, 101, 98, 230),
         )
 
         path = output_dir / f"section_{active_index + 1}_{section['id']}.png"
@@ -262,7 +269,7 @@ def generate_progress_assets() -> list[dict]:
                 "path": path,
                 "start": section["start"],
                 "end": section["end"],
-                "x": "80",
+                "x": "140",
                 "y": "860",
                 "width": width,
                 "kind": "image",
@@ -275,7 +282,7 @@ def generate_progress_assets() -> list[dict]:
             "path": config.PROGRESS_ICON,
             "start": 0.0,
             "end": config.DURATION,
-            "x": f"'100+(1720-w)*min(t,{ff(config.DURATION)})/{ff(config.DURATION)}'",
+            "x": f"'160+(1600-w)*min(t,{ff(config.DURATION)})/{ff(config.DURATION)}'",
             "y": "'804-3*abs(sin(PI*t*2))'",
             "width": 64,
             "kind": "image",
@@ -434,13 +441,18 @@ def build_command(
     )
 
     filters.append(
-        "[v0]drawbox=x=100:y=868:w=1720:h=6:"
+        "[v0]drawbox=x=160:y=868:w=1600:h=6:"
         "color=0x454D4A@0.88:t=fill[progressrail]"
     )
     filters.append(
-        f"[progressrail]drawbox=x=100:y=868:"
-        f"w='max(1,1720*t/{ff(config.DURATION)})':"
-        "h=6:color=0x69FF75@0.96:t=fill[progressfill]"
+        f"color=c=0x69FF75:s=1600x6:d={ff(config.DURATION)}:r={config.FPS},"
+        "format=rgba,"
+        "geq=r='r(X,Y)':g='g(X,Y)':b='b(X,Y)':"
+        f"a='if(lte(X,1600*T/{ff(config.DURATION)}),245,0)'[progressbar]"
+    )
+    filters.append(
+        "[progressrail][progressbar]overlay=x=160:y=868:"
+        "eof_action=pass:shortest=0[progressfill]"
     )
     current = "progressfill"
     for number, (item, index) in enumerate(zip(overlays, asset_indexes), start=1):
@@ -544,9 +556,9 @@ def main() -> int:
     screen_freeze = generate_screen_freeze()
     config.OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     output = args.output or config.OUTPUT_DIR / (
-        "Codex保姆级教学_审核预览_v2.3.6.mp4"
+        "Codex保姆级教学_审核预览_v2.3.8.mp4"
         if args.draft
-        else "Codex保姆级教学_成片_v2.3.6.mp4"
+        else "Codex保姆级教学_成片_v2.3.8.mp4"
     )
     output = output.resolve()
     command, filter_graph = build_command(
