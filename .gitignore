@@ -24,3 +24,6 @@ edit/
 
 # Node（若后续引入 Remotion）
 node_modules/
+
+# 钉钉开放平台凭证（本地专用，严禁入库）
+scripts/.dingtalk.env
